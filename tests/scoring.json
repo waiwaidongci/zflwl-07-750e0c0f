@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "weight_policy": {
+    "version": 1,
+    "basis": "business_priority",
+    "core_min_share": 0.5
+  },
+  "gate_tests": [
+    "test_outputs.py::test_gate_links_every_record_to_one_station"
+  ],
+  "tests": {
+    "test_outputs.py::test_constituent_lag_inversion_recovers_four_station_map": {
+      "weight": 0.15,
+      "priority": "core",
+      "rationale": "四台仪器同时恢复分潮形态与钟差，是匿名记录归站可用的最低业务闭环。"
+    },
+    "test_outputs.py::test_twelve_gauge_assignment_is_globally_consistent": {
+      "weight": 0.15,
+      "priority": "core",
+      "rationale": "十二台记录必须给出一致的一对一总匹配，直接检验真实换季批量校准能力。"
+    },
+    "test_outputs.py::test_shared_gain_and_lag_are_recovered_from_spectrum": {
+      "weight": 0.15,
+      "priority": "core",
+      "rationale": "共用增益和钟差的数值准确度决定潮位档案能否用于后续基准订正。"
+    },
+    "test_outputs.py::test_hourly_sampling_boundary_is_accepted": {
+      "weight": 0.15,
+      "priority": "core",
+      "rationale": "标准四分点采样是现场验潮仪的主要格式，边界通过关系批量导入成功率。"
+    },
+    "test_outputs.py::test_duplicate_spectral_signatures_report_ambiguity": {
+      "weight": 0.06,
+      "priority": "boundary",
+      "rationale": "谱形重复时报告歧义，可阻止调度组把不可确定的仪器档案强行发布。"
+    },
+    "test_outputs.py::test_extra_top_level_key_is_refused": {
+      "weight": 0.07,
+      "priority": "schema",
+      "rationale": "多余字段会被坏件导入器拒收，必须在计算前阻断以免污染整批校准。"
+    },
+    "test_outputs.py::test_success_output_is_compact_sorted_and_newline_terminated": {
+      "weight": 0.06,
+      "priority": "supporting",
+      "rationale": "稳定的结果字节便于归档系统逐版比对，不会把格式差异误报成数据变化。"
+    },
+    "test_outputs.py::test_nonuniform_sample_grid_is_refused": {
+      "weight": 0.07,
+      "priority": "boundary",
+      "rationale": "非均匀采样会破坏分潮正交反演，提前拒收可避免发布失真的仪器参数。"
+    },
+    "test_outputs.py::test_zero_harmonic_amplitude_is_refused": {
+      "weight": 0.04,
+      "priority": "boundary",
+      "rationale": "零振幅不能表示有效分潮指纹，必须在闭区间正端拒收。"
+    },
+    "test_outputs.py::test_duplicate_station_ids_are_refused": {
+      "weight": 0.05,
+      "priority": "schema",
+      "rationale": "重复台站号会破坏一对一归站结果，必须在匹配前阻断。"
+    },
+    "test_outputs.py::test_record_count_mismatch_is_refused": {
+      "weight": 0.05,
+      "priority": "schema",
+      "rationale": "记录数与台站数不一致无法形成完整置换，应在反演前拒收。"
+    }
+  }
+}
