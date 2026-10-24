@@ -260,6 +260,23 @@ def hungarian(cost: list[list[float]]) -> list[int]:
     return assignment
 
 
+def assignment_cost(cost: list[list[float]], assignment: list[int]) -> float:
+    return math.fsum(cost[row][column] for row, column in enumerate(assignment))
+
+
+def has_alternative_best(cost: list[list[float]], assignment: list[int]) -> bool:
+    """Return whether a different full assignment ties the selected optimum."""
+    best = assignment_cost(cost, assignment)
+    second_best = math.inf
+    for row, assigned_column in enumerate(assignment):
+        restricted = [values[:] for values in cost]
+        restricted[row][assigned_column] = math.inf
+        alternative = hungarian(restricted)
+        alternative_cost = assignment_cost(restricted, alternative)
+        second_best = min(second_best, alternative_cost)
+    return math.isfinite(second_best) and second_best - best <= 1e-9
+
+
 def recover(stations: list[dict[str, Any]], records: list[dict[str, Any]]) -> dict[str, Any]:
     times = records[0]["times_hours"]
     observed = [record["values"] for record in records]
@@ -276,14 +293,8 @@ def recover(stations: list[dict[str, Any]], records: list[dict[str, Any]]) -> di
         parameters.append(row_parameters)
 
     assignment = hungarian(costs)
-    for record_index, station_index in enumerate(assignment):
-        alternatives = sorted(
-            value
-            for index, value in enumerate(costs[record_index])
-            if index != station_index
-        )
-        if alternatives and alternatives[0] - costs[record_index][station_index] <= 1e-9:
-            return {"candidates": 2, "status": "ambiguous"}
+    if has_alternative_best(costs, assignment):
+        return {"candidates": 2, "status": "ambiguous"}
 
     station_map: dict[str, str] = {}
     calibration: dict[str, dict[str, float]] = {}

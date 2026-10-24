@@ -9,14 +9,24 @@ from pathlib import Path
 
 
 ENTRY = os.environ.get("TIDE_SENSOR", "/app/recover_tides.py")
+
+SAFE_ENV = {
+    "PATH": "/usr/bin:/bin",
+    "HOME": "/tmp",
+    "LANG": "C.UTF-8",
+    "LC_ALL": "C.UTF-8",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONHASHSEED": "0",
+}
 PERIODS = (12.4206, 12.0, 25.8193)
 
 
 def _run(payload: Path, output: Path) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [sys.executable, ENTRY, str(payload), str(output)],
+        [sys.executable, "-S", "-P", "-B", ENTRY, str(payload), str(output)],
         text=True,
         capture_output=True,
+        env=SAFE_ENV,
         timeout=30,
         check=False,
     )
@@ -38,7 +48,11 @@ def _station(index: int) -> dict[str, object]:
     return {"id": f"TIDE-{index:02d}AB", "harmonics": harmonics}
 
 
-def _payload(count: int = 12) -> tuple[dict[str, object], dict[str, str], dict[str, dict[str, float]]]:
+def _payload(
+    count: int = 12,
+    *,
+    lags_minutes: list[float] | None = None,
+) -> tuple[dict[str, object], dict[str, str], dict[str, dict[str, float]]]:
     stations = [_station(index) for index in range(count)]
     order = [(index * 7 + 3) % count for index in range(count)]
     expected_map: dict[str, str] = {}
@@ -47,7 +61,11 @@ def _payload(count: int = 12) -> tuple[dict[str, object], dict[str, str], dict[s
     times = [round(index * 1.0, 6) for index in range(144)]
     for record_index, station_index in enumerate(order):
         gain = 0.91 + 0.013 * record_index
-        lag_minutes = -36.0 + 5.5 * record_index
+        lag_minutes = (
+            lags_minutes[record_index]
+            if lags_minutes is not None
+            else -36.0 + 5.5 * record_index
+        )
         lag_hours = lag_minutes / 60.0
         values = []
         for time in times:
@@ -141,6 +159,22 @@ def test_hourly_sampling_boundary_is_accepted(tmp_path: Path) -> None:
     assert len(payload["records"][0]["times_hours"]) == 144
     assert completed.returncode == 0
     assert result["station_map"] == expected, "CASE-SCHEMA-01 CASE-HARMONIC-02 CASE-RECORD-02 CASE-RECORD-03"
+
+
+def test_clock_lag_public_boundaries_are_recovered(tmp_path: Path) -> None:
+    """题面：「-90 到 90 分钟的闭区间」"""
+
+    # CASE-LAG-01
+    lags = [-90.0, 90.0, -73.5, 41.25]
+    payload, expected, expected_calibration = _payload(4, lags_minutes=lags)
+    source = tmp_path / "input.json"
+    output = tmp_path / "result.json"
+    _write_json(source, payload)
+    completed = _run(source, output)
+    result = json.loads(output.read_text(encoding="utf-8"))
+    assert completed.returncode == 0
+    assert result["station_map"] == expected, "CASE-LAG-01"
+    assert result["calibration"] == expected_calibration, "CASE-LAG-01"
 
 
 def test_duplicate_spectral_signatures_report_ambiguity(tmp_path: Path) -> None:

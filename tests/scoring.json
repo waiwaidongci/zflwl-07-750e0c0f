@@ -10,24 +10,29 @@
   ],
   "tests": {
     "test_outputs.py::test_constituent_lag_inversion_recovers_four_station_map": {
-      "weight": 0.15,
+      "weight": 0.13,
       "priority": "core",
       "rationale": "四台仪器同时恢复分潮形态与钟差，是匿名记录归站可用的最低业务闭环。"
     },
     "test_outputs.py::test_twelve_gauge_assignment_is_globally_consistent": {
-      "weight": 0.15,
+      "weight": 0.13,
       "priority": "core",
       "rationale": "十二台记录必须给出一致的一对一总匹配，直接检验真实换季批量校准能力。"
     },
     "test_outputs.py::test_shared_gain_and_lag_are_recovered_from_spectrum": {
-      "weight": 0.15,
+      "weight": 0.13,
       "priority": "core",
       "rationale": "共用增益和钟差的数值准确度决定潮位档案能否用于后续基准订正。"
     },
     "test_outputs.py::test_hourly_sampling_boundary_is_accepted": {
-      "weight": 0.15,
+      "weight": 0.13,
       "priority": "core",
       "rationale": "标准四分点采样是现场验潮仪的主要格式，边界通过关系批量导入成功率。"
+    },
+    "test_outputs.py::test_clock_lag_public_boundaries_are_recovered": {
+      "weight": 0.08,
+      "priority": "core",
+      "rationale": "钟差公开边界必须在题面、参考搜索和验收测试中一致，否则合法仪器记录会被静默漏解。"
     },
     "test_outputs.py::test_duplicate_spectral_signatures_report_ambiguity": {
       "weight": 0.06,
