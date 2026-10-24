@@ -218,19 +218,23 @@ def test_extra_top_level_key_is_refused(tmp_path: Path) -> None:
 
 def test_success_output_is_compact_sorted_and_newline_terminated(tmp_path: Path) -> None:
     """题面：
-    「`TIDE-[A-Z0-9]{4}`，重复编号立即拒收。`harmonics` 固定按 12.4206、12.0、25.8193 小时排列，」
+    「同一批潮位记录重跑两次时，结果字节必须一致。」
     """
 
     payload, _, _ = _payload(4)
     source = tmp_path / "input.json"
     output = tmp_path / "result.json"
+    second_output = tmp_path / "result-copy.json"
     _write_json(source, payload)
     completed = _run(source, output)
+    second_run = _run(source, second_output)
     raw = output.read_bytes()
     parsed = json.loads(raw)
     canonical = json.dumps(parsed, sort_keys=True, separators=(",", ":")).encode() + b"\n"
     assert completed.returncode == 0
+    assert second_run.returncode == 0
     assert raw == canonical
+    assert second_output.read_bytes() == raw
 
 
 def test_nonuniform_sample_grid_is_refused(tmp_path: Path) -> None:
